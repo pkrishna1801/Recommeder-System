@@ -1,0 +1,51 @@
+# -------------------
+# Python / Flask (backend/)
+# -------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+*.db
+*.sqlite3
+*.log
+instance/
+.env
+.env.*
+venv/
+.venv/
+backend/__pycache__/
+backend/*.log
+backend/instance/
+backend/venv/
+backend/.env
+
+# -------------------
+# Node / React (frontend/)
+# -------------------
+node_modules/
+build/
+dist/
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.env
+frontend/*.log
+
+# -------------------
+# IDEs / Editors
+# -------------------
+.vscode/
+.idea/
+*.swp
+
+# -------------------
+# OS-specific
+# -------------------
+.DS_Store
+Thumbs.db
+
+# -------------------
+# Dependency lock files (optional if managed by team)
+# -------------------
+# backend/Pipfile.lock
+# frontend/yarn.lock
