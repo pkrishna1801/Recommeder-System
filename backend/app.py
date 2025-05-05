@@ -1,38 +1,49 @@
+# Modify your imports first
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
+import json
 from services.llm_service import LLMService
 from services.product_service import ProductService
 from config import config
+from services.embedding_service import EmbeddingService
+
+# Initialize Flask app
+app = Flask(__name__)
+CORS(app)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Flask app
-app = Flask(__name__)
-CORS(app)  # Enable Cross-Origin Resource Sharing
-
+# Initialize services
 # Initialize services
 product_service = ProductService()
+embedding_service = EmbeddingService()  # Initialize embedding service
 llm_service = LLMService()
+
+# When the app starts, precompute embeddings for all products
+@app.before_first_request
+def precompute_embeddings():
+    """Precompute embeddings for all products in the catalog"""
+    try:
+        logger.info("Precomputing embeddings for all products...")
+        all_products = product_service.get_all_products()
+        embedding_service.embed_all_products(all_products)
+        logger.info(f"Embeddings computed for {len(all_products)} products")
+    except Exception as e:
+        logger.error(f"Error precomputing embeddings: {str(e)}")
 
 @app.route('/api/products', methods=['GET'])
 def get_products():
-    """
-    Endpoint to retrieve available products.
-    Can be filtered by category, price range, etc.
-    """
+    """Endpoint to retrieve all products"""
     try:
-        # Get all products (filtering can be implemented later)
         products = product_service.get_all_products()
-        
         return jsonify({
             'success': True,
             'products': products,
             'count': len(products)
         })
-        
     except Exception as e:
         logger.error(f"Error in get_products: {str(e)}")
         return jsonify({
@@ -105,11 +116,12 @@ def get_brands():
             'error': str(e)
         }), 500
 
+
 @app.route('/api/recommendations', methods=['POST'])
 def get_recommendations():
     """
     Endpoint to generate personalized product recommendations
-    based on user preferences and browsing history.
+    based on user preferences and browsing history
     """
     try:
         # Get request data
@@ -124,22 +136,16 @@ def get_recommendations():
         user_preferences = data.get('preferences', {})
         browsing_history = data.get('browsing_history', [])
         
-        # Get all available products
+        # Get all products
         all_products = product_service.get_all_products()
-        if not all_products:
-            return jsonify({
-                'success': False,
-                'error': 'No products available'
-            }), 404
         
         # Generate recommendations
         recommendations = llm_service.generate_recommendations(
-            user_preferences=user_preferences,
-            browsing_history=browsing_history,
-            all_products=all_products
+            user_preferences,
+            browsing_history,
+            all_products
         )
         
-        # Return the recommendations
         return jsonify({
             'success': True,
             'recommendations': recommendations.get('recommendations', []),
@@ -153,5 +159,6 @@ def get_recommendations():
             'error': str(e)
         }), 500
 
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

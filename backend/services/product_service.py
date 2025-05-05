@@ -1,17 +1,29 @@
+# services/product_service.py
 import json
 from config import config
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ProductService:
     """
     Service to handle product data operations
     """
     
-    def __init__(self):
+    def __init__(self, llm_service=None):
         """
         Initialize the product service with data path from config
         """
         self.data_path = config['DATA_PATH']
         self.products = self._load_products()
+        self.llm_service = llm_service
+        
+        # If LLM service is provided, build the product index
+        if self.llm_service:
+            logger.info("Building product index for FAISS...")
+            count = self.llm_service.build_product_index(self.products)
+            logger.info(f"Product index built with {count} products")
+    
     
     def _load_products(self):
         """

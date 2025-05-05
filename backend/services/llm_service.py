@@ -1,34 +1,25 @@
+# services/llm_service.py
 import openai
 import json
 import re
 from config import config
+# from services.embedding_service import EmbeddingService
+
+# Add to your imports
+from services.embedding_service import EmbeddingService
 
 class LLMService:
-    """
-    Service to handle interactions with the LLM API
-    """
     
     def __init__(self):
-        """
-        Initialize the LLM service with configuration
-        """
+        """Initialize the LLM service with configuration"""
         openai.api_key = config['OPENAI_API_KEY']
         self.model_name = config['MODEL_NAME']
         self.max_tokens = config['MAX_TOKENS']
         self.temperature = config['TEMPERATURE']
+        self.embedding_service = EmbeddingService()  # Initialize embedding service
     
     def generate_recommendations(self, user_preferences, browsing_history, all_products):
-        """
-        Generate personalized product recommendations based on user preferences and browsing history
-        
-        Parameters:
-        - user_preferences (dict): User's stated preferences
-        - browsing_history (list): List of product IDs the user has viewed
-        - all_products (list): Full product catalog
-        
-        Returns:
-        - dict: Recommended products with explanations
-        """
+        """Generate personalized product recommendations"""
         # Get browsed products details
         browsed_products = []
         for product_id in browsing_history:
@@ -37,18 +28,22 @@ class LLMService:
                     browsed_products.append(product)
                     break
         
-        # Pre-filter products to reduce token usage
-        relevant_products = self._prefilter_products(user_preferences, browsed_products, all_products)
-        
-        # Create a prompt for the LLM
-        prompt = self._create_recommendation_prompt(user_preferences, browsed_products, relevant_products)
+        # If we have no browsing history, use a basic approach
+        if not browsed_products:
+            # Pre-filter products to reduce token usage
+            relevant_products = self._prefilter_products(user_preferences, browsed_products, all_products)
+            prompt = self._create_recommendation_prompt(user_preferences, browsed_products, relevant_products)
+        else:
+            # Use RAG approach for more efficient token usage
+            relevant_products = self._rag_find_relevant_products(user_preferences, browsed_products, all_products)
+            prompt = self._create_rag_prompt(user_preferences, browsed_products, relevant_products)
         
         # Call the LLM API
         try:
             response = openai.ChatCompletion.create(
                 model=self.model_name,
                 messages=[
-                    {"role": "system", "content": "You are an expert eCommerce product recommendation system. Your recommendations are personalized, insightful, and based on a deep understanding of product features and customer preferences."},
+                    {"role": "system", "content": "You are an expert eCommerce product recommendation system."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=self.max_tokens,
@@ -61,13 +56,146 @@ class LLMService:
             return recommendations
             
         except Exception as e:
-            # Handle any errors from the LLM API
             print(f"Error calling LLM API: {str(e)}")
             raise Exception(f"Failed to generate recommendations: {str(e)}")
     
-    def _prefilter_products(self, user_preferences, browsed_products, all_products, max_products=30):
+    def _rag_find_relevant_products(self, user_preferences, browsed_products, all_products, max_products=10):
+        """Use RAG approach with FAISS to find relevant products"""
+        # First apply basic filtering if preferences exist
+        filtered_products = all_products.copy()
+        
+        # Filter by category if specified
+        if 'category' in user_preferences and user_preferences['category']:
+            categories = user_preferences['category']
+            if isinstance(categories, str):
+                categories = [categories]
+            filtered_products = [p for p in filtered_products if p.get('category') in categories]
+        
+        # Filter by price range if specified
+        if 'price_range' in user_preferences:
+            price_range = user_preferences['price_range']
+            if 'min' in price_range and price_range['min'] is not None:
+                filtered_products = [p for p in filtered_products if p.get('price', 0) >= price_range['min']]
+            if 'max' in price_range and price_range['max'] is not None:
+                filtered_products = [p for p in filtered_products if p.get('price', 0) <= price_range['max']]
+        
+        # Now do embedding-based similarity search
+        if browsed_products:
+            # Ensure FAISS index is built with the filtered products
+            self.embedding_service.embed_all_products(filtered_products)
+            
+            # Get embedding for user interests
+            user_embedding = self.embedding_service.get_user_interests_embedding(
+                browsed_products, user_preferences
+            )
+            
+            # Get IDs of products already browsed to exclude them
+            browsed_ids = [p['id'] for p in browsed_products]
+            
+            # Find similar products using FAISS
+            similar_products = self.embedding_service.find_similar_products(
+                user_embedding, 
+                filtered_products,
+                top_n=max_products,
+                exclude_ids=browsed_ids
+            )
+            
+            # Extract just the products (without scores)
+            relevant_products = [p[0] for p in similar_products]
+        else:
+            # If no browsing history, just use the filtered products
+            relevant_products = filtered_products[:max_products]
+        
+        return relevant_products
+    
+    def _create_rag_prompt(self, user_preferences, browsed_products, relevant_products):
+        """Create a compact and efficient prompt for the LLM using RAG results"""
+        # Create a much more compact prompt
+        prompt = """
+        You are an expert e-commerce product recommendation specialist. Your task is to recommend the most relevant products for a user based on their browsing history and preferences.
+
+        # USER BROWSING HISTORY
         """
-        Pre-filter products based on user preferences to reduce token usage
+        
+        # Add browsing history in compact format
+        if browsed_products:
+            for product in browsed_products:
+                prompt += f"- {product['name']} (ID: {product['id']})\n"
+                prompt += f"  Category: {product.get('category', 'N/A')}, Subcategory: {product.get('subcategory', 'N/A')}\n"
+                prompt += f"  Brand: {product.get('brand', 'N/A')}, Price: ${product.get('price', 0)}\n"
+                if 'tags' in product and product['tags']:
+                    prompt += f"  Tags: {', '.join(product['tags'])}\n"
+                prompt += "\n"
+        else:
+            prompt += "- No browsing history available\n"
+        
+        # Add user preferences in compact format
+        prompt += "\n# USER PREFERENCES\n"
+        if user_preferences:
+            for key, value in user_preferences.items():
+                if value:
+                    prompt += f"- {key.replace('_', ' ').title()}: {value}\n"
+        else:
+            prompt += "- No explicit preferences provided\n"
+        
+        # Add available products section - much more compact
+        prompt += "\n# AVAILABLE PRODUCTS FOR RECOMMENDATION\n"
+        
+        for i, product in enumerate(relevant_products):
+            prompt += f"Product {i+1}: {product['name']} (ID: {product['id']})\n"
+            prompt += f"- Category: {product.get('category', 'N/A')}, Subcategory: {product.get('subcategory', 'N/A')}\n"
+            prompt += f"- Brand: {product.get('brand', 'N/A')}, Price: ${product.get('price', 0)}\n"
+            prompt += f"- Rating: {product.get('rating', 'N/A')}\n"
+            
+            # Add a compact description
+            description = product.get('description', '')
+            if len(description) > 100:
+                description = description[:97] + "..."
+            prompt += f"- Description: {description}\n"
+            
+            # Add key features (limited to 3)
+            if 'features' in product and product['features']:
+                prompt += f"- Features: {', '.join(product['features'][:3])}\n"
+            
+            # Add key tags
+            if 'tags' in product and product['tags']:
+                prompt += f"- Tags: {', '.join(product['tags'])}\n"
+            
+            prompt += "\n"
+        
+        # Add task instructions - keep them clear but concise
+        prompt += """
+        # TASK
+        Based on the user's browsing history and preferences, recommend 5 products from the available products list.
+
+        IMPORTANT INSTRUCTIONS:
+        1. Make COHERENT recommendations - products should be logically related to what the user has browsed
+        2. Provide a UNIQUE and SPECIFIC explanation for each product explaining exactly why it matches this user's interests
+        3. Make sure your explanations match the actual product being recommended - don't reference features the product doesn't have
+        4. Ensure you don't recommend duplicate products
+        5. Assign a relevance score (0-100) to each product based on how well it matches the user's interests
+
+        # OUTPUT FORMAT
+        Return your recommendations as a valid JSON array of objects with the following structure:
+        [
+          {
+            "product_id": "product123",
+            "relevance_score": 95,
+            "explanation": "Detailed explanation of why this specific product matches the user's preferences and browsing patterns"
+          },
+          ...
+        ]
+
+        Ensure your output is valid, parseable JSON with exactly these three fields for each recommendation.
+        """
+        
+        return prompt
+    
+    # Keep existing methods for backward compatibility 
+    # (unchanged - _prefilter_products, _create_recommendation_prompt, _parse_recommendation_response)
+    def _prefilter_products(self, user_preferences, browsed_products, all_products, max_products=10):
+        """
+        Pre-filter products based on user preferences and find semantically similar products using embeddings
         
         Parameters:
         - user_preferences (dict): User's stated preferences
@@ -78,252 +206,134 @@ class LLMService:
         Returns:
         - list: Filtered list of relevant products
         """
-        # Start with all products
+        # Start with basic filtering based on preferences
         filtered_products = all_products.copy()
         
         # Filter by category if specified
-        if 'categories' in user_preferences and user_preferences['categories']:
-            categories = user_preferences['categories']
+        if 'category' in user_preferences and user_preferences['category']:
+            categories = user_preferences['category']
             if isinstance(categories, str):
                 categories = [categories]
             filtered_products = [p for p in filtered_products if p.get('category') in categories]
         
         # Filter by price range if specified
-        if 'priceRange' in user_preferences:
-            price_range = user_preferences['priceRange']
-            if price_range == '0-50':
-                filtered_products = [p for p in filtered_products if p.get('price', 0) <= 50]
-            elif price_range == '50-100':
-                filtered_products = [p for p in filtered_products if 50 <= p.get('price', 0) <= 100]
-            elif price_range == '100+':
-                filtered_products = [p for p in filtered_products if p.get('price', 0) >= 100]
+        if 'price_range' in user_preferences:
+            price_range = user_preferences['price_range']
+            if 'min' in price_range and price_range['min'] is not None:
+                filtered_products = [p for p in filtered_products if p.get('price', 0) >= price_range['min']]
+            if 'max' in price_range and price_range['max'] is not None:
+                filtered_products = [p for p in filtered_products if p.get('price', 0) <= price_range['max']]
         
         # Filter by brand if specified
-        if 'brands' in user_preferences and user_preferences['brands']:
-            brands = user_preferences['brands']
+        if 'brand' in user_preferences and user_preferences['brand']:
+            brands = user_preferences['brand']
             if isinstance(brands, str):
                 brands = [brands]
             filtered_products = [p for p in filtered_products if p.get('brand') in brands]
         
-        # Calculate similarity to browsed products for remaining products
+        # If we have browsing history, use embeddings to find similar products
         if browsed_products:
-            # Extract categories, subcategories, brands, and tags from browsed products
-            browsed_categories = set(p.get('category') for p in browsed_products if p.get('category'))
-            browsed_subcategories = set(p.get('subcategory') for p in browsed_products if p.get('subcategory'))
-            browsed_brands = set(p.get('brand') for p in browsed_products if p.get('brand'))
-            browsed_tags = set()
-            for p in browsed_products:
-                if p.get('tags'):
-                    browsed_tags.update(p.get('tags'))
+            # Get IDs of products already browsed
+            browsed_ids = [p['id'] for p in browsed_products]
             
-            # Score products based on similarity to browsed items
-            scored_products = []
-            for product in filtered_products:
-                score = 0
-                
-                # Category match
-                if product.get('category') in browsed_categories:
-                    score += 3
-                
-                # Subcategory match
-                if product.get('subcategory') in browsed_subcategories:
-                    score += 2
-                
-                # Brand match
-                if product.get('brand') in browsed_brands:
-                    score += 2
-                
-                # Tag matches
-                if product.get('tags'):
-                    tag_matches = sum(1 for tag in product.get('tags') if tag in browsed_tags)
-                    score += tag_matches
-                
-                # Add the product with its score
-                scored_products.append((product, score))
+            # Get embedding for user interests
+            user_embedding = self._get_user_interests_embedding(browsed_products, user_preferences)
             
-            # Sort by score (highest first)
-            scored_products.sort(key=lambda x: x[1], reverse=True)
+            # Find similar products
+            similar_products = self._find_similar_products(
+                user_embedding, 
+                filtered_products, 
+                top_n=max_products,
+                exclude_ids=browsed_ids
+            )
             
-            # Take top scoring products, plus some non-matching ones for diversity
-            top_products = [p[0] for p in scored_products[:int(max_products * 0.7)]]
-            
-            # Add some products not browsed for diversity (up to max_products)
-            diversity_products = [p[0] for p in scored_products[int(max_products * 0.7):]]
-            
-            # Ensure we're not exceeding max_products
-            filtered_products = top_products + diversity_products[:max_products - len(top_products)]
-        
-        # If too few products remain after filtering, loosen criteria
-        if len(filtered_products) < 10:
-            filtered_products = all_products[:max_products]
+            # Extract just the products (without scores)
+            filtered_products = [p[0] for p in similar_products]
         
         # Limit to max_products
         return filtered_products[:max_products]
     
     def _create_recommendation_prompt(self, user_preferences, browsed_products, relevant_products):
         """
-        Create a prompt for the LLM to generate recommendations
-        
-        Parameters:
-        - user_preferences (dict): User's stated preferences
-        - browsed_products (list): Products the user has viewed
-        - relevant_products (list): Pre-filtered relevant products
-        
-        Returns:
-        - str: Prompt for the LLM
+        Create an improved prompt for getting better recommendations
         """
-        # Create a structured prompt with clear sections and instructions
         prompt = """
-        You are an AI shopping assistant specializing in personalized product recommendations. 
-        Your task is to suggest products that best match the user's explicit preferences and implicit interests shown in their browsing history.
+        You are an expert e-commerce product recommendation specialist. Your task is to recommend the most relevant products for a user based on their browsing history and preferences.
         
-        # USER PREFERENCES
+        # USER BROWSING HISTORY
         """
         
-        # Add user preferences to the prompt with detailed formatting
-        if user_preferences:
-            price_range = user_preferences.get('priceRange', 'all')
-            prompt += f"- Price Range: {price_range}\n"
-            
-            categories = user_preferences.get('categories', [])
-            if categories:
-                prompt += f"- Preferred Categories: {', '.join(categories)}\n"
-                
-            brands = user_preferences.get('brands', [])
-            if brands:
-                prompt += f"- Preferred Brands: {', '.join(brands)}\n"
-        else:
-            prompt += "- No explicit preferences provided\n"
-        
-        # Add browsing history section with detailed product information
-        prompt += "\n# BROWSING HISTORY\n"
-        
+        # Add browsing history details
         if browsed_products:
             for product in browsed_products:
                 prompt += f"- {product['name']} (ID: {product['id']})\n"
                 prompt += f"  Category: {product.get('category', 'N/A')}, Subcategory: {product.get('subcategory', 'N/A')}\n"
                 prompt += f"  Brand: {product.get('brand', 'N/A')}, Price: ${product.get('price', 0)}\n"
+                
                 if 'tags' in product and product['tags']:
                     prompt += f"  Tags: {', '.join(product['tags'])}\n"
-                if 'features' in product and product['features']:
-                    prompt += f"  Key Features: {', '.join(product['features'][:3])}\n"
+                
                 prompt += "\n"
         else:
-            prompt += "- No browsing history available\n"
+            prompt += "No browsing history available.\n\n"
         
-        # Extract behavioral patterns and preferences from browsing history
-        if browsed_products:
-            prompt += "\n# BEHAVIORAL INSIGHTS\n"
-            
-            # Extract and count categories
-            categories = {}
-            subcategories = {}
-            brands = {}
-            price_points = []
-            tags = {}
-            
-            for product in browsed_products:
-                # Count categories
-                cat = product.get('category')
-                if cat:
-                    categories[cat] = categories.get(cat, 0) + 1
-                
-                # Count subcategories
-                subcat = product.get('subcategory')
-                if subcat:
-                    subcategories[subcat] = subcategories.get(subcat, 0) + 1
-                
-                # Count brands
-                brand = product.get('brand')
-                if brand:
-                    brands[brand] = brands.get(brand, 0) + 1
-                
-                # Track price points
-                price = product.get('price')
-                if price:
-                    price_points.append(price)
-                
-                # Count tags
-                if 'tags' in product and product['tags']:
-                    for tag in product['tags']:
-                        tags[tag] = tags.get(tag, 0) + 1
-            
-            # Add observed categories
-            if categories:
-                top_categories = sorted(categories.items(), key=lambda x: x[1], reverse=True)[:3]
-                prompt += f"- Frequently browsed categories: {', '.join([f'{cat} ({count})' for cat, count in top_categories])}\n"
-            
-            # Add observed subcategories
-            if subcategories:
-                top_subcategories = sorted(subcategories.items(), key=lambda x: x[1], reverse=True)[:3]
-                prompt += f"- Frequently browsed subcategories: {', '.join([f'{subcat} ({count})' for subcat, count in top_subcategories])}\n"
-            
-            # Add observed brands
-            if brands:
-                top_brands = sorted(brands.items(), key=lambda x: x[1], reverse=True)[:3]
-                prompt += f"- Preferred brands: {', '.join([f'{brand} ({count})' for brand, count in top_brands])}\n"
-            
-            # Add price range
-            if price_points:
-                avg_price = sum(price_points) / len(price_points)
-                min_price = min(price_points)
-                max_price = max(price_points)
-                prompt += f"- Price behavior: Avg=${avg_price:.2f}, Range=${min_price:.2f}-${max_price:.2f}\n"
-            
-            # Add observed tags/interests
-            if tags:
-                top_tags = sorted(tags.items(), key=lambda x: x[1], reverse=True)[:5]
-                prompt += f"- Interest areas: {', '.join([f'{tag} ({count})' for tag, count in top_tags])}\n"
+        # Add user preferences
+        prompt += "# USER PREFERENCES\n"
+        if user_preferences:
+            for key, value in user_preferences.items():
+                if value:
+                    prompt += f"- {key.replace('_', ' ').title()}: {value}\n"
+        else:
+            prompt += "No specific preferences provided.\n"
         
-        # Add available products section (simplified to reduce tokens)
-        prompt += "\n# AVAILABLE PRODUCTS\n"
+        prompt += "\n# AVAILABLE PRODUCTS FOR RECOMMENDATION\n\n"
         
-        # Add simplified product information
-        for product in relevant_products:
-            prompt += f"ID: {product['id']} - {product['name']}\n"
-            prompt += f"Category: {product.get('category', 'N/A')}, Subcategory: {product.get('subcategory', 'N/A')}\n"
-            prompt += f"Brand: {product.get('brand', 'N/A')}, Price: ${product.get('price', 0)}, Rating: {product.get('rating', 'N/A')}\n"
+        # Add available products with detailed information
+        for i, product in enumerate(relevant_products):
+            prompt += f"Product {i+1}: {product['name']} (ID: {product['id']})\n"
+            prompt += f"- Category: {product.get('category', 'N/A')}, Subcategory: {product.get('subcategory', 'N/A')}\n"
+            prompt += f"- Brand: {product.get('brand', 'N/A')}, Price: ${product.get('price', 0)}\n"
             
-            # Add description
+            if 'rating' in product:
+                prompt += f"- Rating: {product['rating']}\n"
+            
             if 'description' in product:
-                prompt += f"Description: {product['description']}\n"
+                prompt += f"- Description: {product['description']}\n"
             
-            # Add tags
-            if 'tags' in product and product['tags']:
-                prompt += f"Tags: {', '.join(product['tags'])}\n"
-            
-            # Add key features (limited to 3 for brevity)
             if 'features' in product and product['features']:
-                prompt += f"Features: {', '.join(product['features'][:3])}\n"
+                prompt += f"- Features: {', '.join(product['features'][:3])}\n"
+            
+            if 'tags' in product and product['tags']:
+                prompt += f"- Tags: {', '.join(product['tags'])}\n"
             
             prompt += "\n"
         
         # Add detailed instructions for the recommendations
         prompt += """
-# RECOMMENDATION TASK
-Based on the user's preferences and browsing history, recommend 5 products that would most interest them.
-
-For each recommendation:
-1. Consider how well it matches explicit preferences (categories, brands, price range)
-2. Consider how it aligns with implicit interests shown in browsing history 
-3. Include some products that expand on user interests (discovery)
-
-# OUTPUT FORMAT
-Return your recommendations as a valid JSON array in this exact structure:
-[
-  {
-    "product_id": "product123",
-    "relevance_score": 0.95,
-    "explanation": "Detailed explanation of why this product is recommended"
-  },
-  ...
-]
-
-Ensure your recommendations have diverse relevance scores between 0.7-1.0 (don't make them all the same).
-Each explanation should be personalized, mentioning specific user preferences or browsing patterns.
-The JSON must be valid and parseable - this is critical.
-"""
+        # TASK
+        Based on the user's browsing history and preferences, recommend 5 products from the available products list.
         
+        IMPORTANT INSTRUCTIONS:
+        1. Make COHERENT recommendations - products should be logically related to what the user has browsed
+        2. Provide a UNIQUE and SPECIFIC explanation for each product explaining exactly why it matches this user's interests
+        3. Make sure your explanations match the actual product being recommended - don't reference features the product doesn't have
+        4. Ensure you don't recommend duplicate products
+        5. Assign a relevance score (0-100) to each product based on how well it matches the user's interests
+        
+        # OUTPUT FORMAT
+        Return your recommendations as a valid JSON array of objects with the following structure:
+        [
+        {
+            "product_id": "product123",
+            "relevance_score": 95,
+            "explanation": "Detailed explanation of why this specific product matches the user's preferences and browsing patterns"
+        },
+        ...
+        ]
+        
+        Ensure your output is valid, parseable JSON with exactly these three fields for each recommendation.
+        """
+        print(f"Generated prompt for LLM:\n{prompt}")
         return prompt
     
     def _parse_recommendation_response(self, llm_response, all_products):
@@ -414,3 +424,63 @@ The JSON must be valid and parseable - this is critical.
                 "recommendations": [],
                 "error": f"Failed to parse recommendations: {str(e)}"
             }
+        
+    def _rag_find_relevant_products(self, user_preferences, browsed_products, all_products, max_products=10):
+        """
+        Use RAG approach with FAISS to find relevant products based on embeddings
+        
+        Parameters:
+        - user_preferences (dict): User's stated preferences
+        - browsed_products (list): Products the user has viewed
+        - all_products (list): Full product catalog
+        - max_products (int): Maximum number of products to include
+        
+        Returns:
+        - list: Filtered list of relevant products
+        """
+        # First apply basic filtering if preferences exist
+        filtered_products = all_products.copy()
+        
+        # Filter by category if specified
+        if 'category' in user_preferences and user_preferences['category']:
+            categories = user_preferences['category']
+            if isinstance(categories, str):
+                categories = [categories]
+            filtered_products = [p for p in filtered_products if p.get('category') in categories]
+        
+        # Filter by price range if specified
+        if 'price_range' in user_preferences:
+            price_range = user_preferences['price_range']
+            if 'min' in price_range and price_range['min'] is not None:
+                filtered_products = [p for p in filtered_products if p.get('price', 0) >= price_range['min']]
+            if 'max' in price_range and price_range['max'] is not None:
+                filtered_products = [p for p in filtered_products if p.get('price', 0) <= price_range['max']]
+        
+        # Now we do embedding-based similarity search
+        if browsed_products:
+            # Ensure FAISS index is built with the filtered products
+            self.embedding_service.embed_all_products(filtered_products)
+            
+            # Get embedding for user interests
+            user_embedding = self.embedding_service.get_user_interests_embedding(
+                browsed_products, user_preferences
+            )
+            
+            # Get IDs of products already browsed to exclude them
+            browsed_ids = [p['id'] for p in browsed_products]
+            
+            # Find similar products using FAISS
+            similar_products = self.embedding_service.find_similar_products(
+                user_embedding, 
+                filtered_products,
+                top_n=max_products,
+                exclude_ids=browsed_ids
+            )
+            
+            # Extract just the products (without scores)
+            relevant_products = [p[0] for p in similar_products]
+        else:
+            # If no browsing history, just use the filtered products
+            relevant_products = filtered_products[:max_products]
+        
+        return relevant_products
