@@ -136,7 +136,6 @@
         "Pets",
         "Clothing",
         "Accessories",
-        "Books",
         "Footwear",
         "Electronics"
       ],
@@ -151,13 +150,10 @@
       ]
     },
     "browsing_history": [
-      "prod046",
-      "prod018",
-      "prod038",
-      "prod028",
-      "prod009"
+      "prod008",
+      "prod028"
     ],
     "created_at": 1746423468.9371405,
-    "last_login": 1746426577.1175432
+    "last_login": 1746475427.2470553
   }
 ]

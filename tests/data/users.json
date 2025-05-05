@@ -1,0 +1,20 @@
+[
+  {
+    "id": "68784b57-22ec-4ad0-90bf-756acc9ea093",
+    "username": "ABC",
+    "email": "ABC@gmail.com",
+    "password_hash": "15e05b4dd99d5b661059d4603f8d60b241398e77f532e33d3f0a218b11e108b9",
+    "password_salt": "943fb37a1867421aba49b3dfa1e6469e",
+    "preferences": {
+      "category_preferences": [],
+      "price_range": {
+        "min": null,
+        "max": null
+      },
+      "brand_preferences": []
+    },
+    "browsing_history": [],
+    "created_at": 1746475651.1336873,
+    "last_login": 1746475826.5476208
+  }
+]

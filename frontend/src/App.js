@@ -40,11 +40,8 @@ const AppContent = () => {
   // State for loading status
   const [isLoading, setIsLoading] = useState(false);
   
-  // State for mobile responsive design
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // State for current page view
-  const [currentPage, setCurrentPage] = useState('catalog'); // 'catalog' or 'recommendations'
+  // State for active tab
+  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' or 'recommendations'
   
   // Fetch products on component mount
   useEffect(() => {
@@ -111,8 +108,8 @@ const AppContent = () => {
         isAuthenticated ? token : null
       );
       setRecommendations(data.recommendations || []);
-      // Switch to recommendations page after loading
-      setCurrentPage('recommendations');
+      // Switch to recommendations tab after loading
+      setActiveTab('recommendations');
     } catch (error) {
       console.error('Error getting recommendations:', error);
     } finally {
@@ -134,11 +131,6 @@ const AppContent = () => {
       }
     }
   };
-
-  // Toggle mobile menu
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
   
   // If not authenticated, show auth page
   if (!isAuthenticated) {
@@ -151,75 +143,71 @@ const AppContent = () => {
       <header className="app-header">
         <div className="header-content">
           <h1>AI Product Recommendations</h1>
-          <button 
-            className="mobile-menu-toggle" 
-            onClick={toggleMobileMenu}
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-          >
-            <span className="menu-icon"></span>
-          </button>
         </div>
         <UserProfile />
-        <div className="page-navigation">
-          <button 
-            className={`nav-button ${currentPage === 'catalog' ? 'active' : ''}`}
-            onClick={() => setCurrentPage('catalog')}
-          >
-            Product Catalog
-          </button>
-          <button 
-            className={`nav-button ${currentPage === 'recommendations' ? 'active' : ''}`}
-            onClick={() => {
-              if (recommendations.length > 0) {
-                setCurrentPage('recommendations');
-              } else {
-                handleGetRecommendations();
-              }
-            }}
-          >
-            Your Recommendations
-          </button>
-        </div>
       </header>
       
-      <main className={`app-content ${isMobileMenuOpen ? 'mobile-menu-open' : ''}`}>
-        <div className="sidebar">
-          <UserPreferences />
+      <main className="app-content">
+        <div className="app-container">
+          <div className="sidebar">
+            <UserPreferences />
+            
+            <BrowsingHistory 
+              products={products}
+              browsingHistory={browsingHistory}
+              onClearHistory={handleClearHistory}
+            />
+            
+            <button 
+              className="get-recommendations-btn"
+              onClick={handleGetRecommendations}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Getting Recommendations...' : 'Get Personalized Recommendations'}
+            </button>
+          </div>
           
-          <BrowsingHistory 
-            products={products}
-            browsingHistory={browsingHistory}
-            onClearHistory={handleClearHistory}
-          />
-          
-          <button 
-            className="get-recommendations-btn"
-            onClick={handleGetRecommendations}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Getting Recommendations...' : 'Get Personalized Recommendations'}
-          </button>
-        </div>
-        
-        <div className="main-content">
-          {currentPage === 'catalog' ? (
-            <section className="catalog-section">
-              <h2 className="section-title">Product Catalog</h2>
-              <Catalog 
-                products={products}
-                onProductClick={handleProductClick}
-                browsingHistory={browsingHistory}
-              />
-            </section>
-          ) : (
-            <section className="recommendations-section full-page">
-              <h2 className="section-title">Your Recommendations</h2>
-              <Recommendations 
-                recommendations={recommendations}
-                isLoading={isLoading}
-              />
-            </section>
-          )}
+          <div className="main-panel">
+            <div className="tab-navigation">
+              <button 
+                className={`tab-button ${activeTab === 'catalog' ? 'active' : ''}`}
+                onClick={() => setActiveTab('catalog')}
+              >
+                Product Catalog
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'recommendations' ? 'active' : ''}`}
+                onClick={() => {
+                  if (recommendations.length > 0) {
+                    setActiveTab('recommendations');
+                  } else {
+                    handleGetRecommendations();
+                  }
+                }}
+              >
+                Your Recommendations
+              </button>
+            </div>
+            
+            <div className="tab-content">
+              {activeTab === 'catalog' ? (
+                <div className="catalog-tab-content">
+                  <Catalog 
+                    products={products}
+                    onProductClick={handleProductClick}
+                    browsingHistory={browsingHistory}
+                  />
+                </div>
+              ) : (
+                <div className="recommendations-tab-content">
+                  <Recommendations 
+                    recommendations={recommendations}
+                    isLoading={isLoading}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </main>
     </div>
