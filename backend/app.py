@@ -16,13 +16,11 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize services
-# Initialize services
 product_service = ProductService()
 embedding_service = EmbeddingService()  # Initialize embedding service
 llm_service = LLMService()
 
-# When the app starts, precompute embeddings for all products
+# precompute embeddings for all products
 @app.before_first_request
 def precompute_embeddings():
     """Precompute embeddings for all products in the catalog"""

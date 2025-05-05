@@ -1,153 +1,317 @@
+"""
+Embedding Service for AI-Powered Product Recommendation Engine
+
+This service handles the creation and retrieval of embeddings for products and user profiles,
+enabling semantic search and similarity-based recommendation.
+"""
+
 import numpy as np
-import faiss
-import openai  # Using the older style import
+import openai
+import json
+import os
+from functools import lru_cache
 from config import config
+
+# Try to import FAISS for efficient similarity search
+try:
+    import faiss
+    FAISS_AVAILABLE = True
+except ImportError:
+    FAISS_AVAILABLE = False
+    print("Warning: FAISS not available. Falling back to NumPy for similarity search.")
+
 
 class EmbeddingService:
     """
-    Service to handle product embeddings and similarity searches using FAISS
+    Service to handle embeddings for products and user data
+    Supports semantic similarity search for more accurate recommendations
     """
     
     def __init__(self):
-        """Initialize the embedding service"""
-        openai.api_key = config['OPENAI_API_KEY']
-        self.embedding_model = "text-embedding-ada-002"
-        self.embedding_dim = 1536  # Dimension for OpenAI embeddings
-        self.product_embeddings = {}  # Cache for product embeddings
-        self.product_ids = []  # To keep track of product IDs
+        """Initialize the embedding service with configuration"""
+        openai.api_key = config.get('OPENAI_API_KEY')
+        self.embedding_model = config.get('EMBEDDING_MODEL', 'text-embedding-ada-002')
+        self.embedding_dim = config.get('EMBEDDING_DIM', 1536)  # Dimension of embeddings
+        self.cache_dir = config.get('CACHE_DIR', 'cache')
         
-        # Initialize FAISS index
-        self.index = faiss.IndexFlatL2(self.embedding_dim)
-        self.is_index_trained = False
-    
-    def _create_product_text(self, product):
-        """Create a text representation of a product for embedding"""
-        text = f"{product['name']} {product.get('category', '')} {product.get('subcategory', '')} "
-        text += f"{product.get('brand', '')} {product.get('description', '')} "
+        # Create cache directory if it doesn't exist
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
         
-        # Add tags
-        if 'tags' in product and product['tags']:
-            text += " ".join(product['tags'])
-            
-        # Add features
-        if 'features' in product and product['features']:
-            text += " " + " ".join(product['features'])
-            
-        return text
+        # Initialize storage for product embeddings
+        self.product_embeddings = {}
+        self.product_index = None
+        self.product_ids = []
     
     def get_embedding(self, text):
-        """Get embedding for a text string"""
+        """
+        Get embedding for a text string using OpenAI's API
+        Uses caching to avoid redundant API calls
+        """
+        # Normalize text for consistent embedding
+        text = text.strip().lower()
+        
+        # Generate a cache key (simple hash of the text)
+        cache_key = str(hash(text))
+        cache_path = os.path.join(self.cache_dir, f"emb_{cache_key}.json")
+        
+        # Check if we have this embedding cached
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, 'r') as f:
+                    return np.array(json.load(f))
+            except (json.JSONDecodeError, IOError):
+                # If there's an issue with the cache file, proceed to generate a new embedding
+                pass
+        
         try:
-            # Using the older OpenAI API style
+            # Get embedding from OpenAI API
             response = openai.Embedding.create(
                 model=self.embedding_model,
                 input=text
             )
-            return np.array(response['data'][0]['embedding'], dtype=np.float32)
+            embedding = response["data"][0]["embedding"]
+            
+            # Cache the embedding
+            with open(cache_path, 'w') as f:
+                json.dump(embedding, f)
+            
+            return np.array(embedding)
+            
         except Exception as e:
-            print(f"Error creating embedding: {str(e)}")
+            print(f"Error getting embedding: {str(e)}")
             # Return a zero vector as fallback
-            return np.zeros(self.embedding_dim, dtype=np.float32)
+            return np.zeros(self.embedding_dim)
     
-    def embed_product(self, product):
-        """Create an embedding for a product"""
-        product_id = product['id']
+    def get_product_embedding(self, product):
+        """
+        Get embedding for a product by combining its relevant attributes
+        """
+        # Extract relevant product information
+        product_info = [
+            f"Name: {product.get('name', '')}",
+            f"Category: {product.get('category', '')}, Subcategory: {product.get('subcategory', '')}",
+            f"Brand: {product.get('brand', '')}, Price: {product.get('price', 0)}",
+            f"Description: {product.get('description', '')}"
+        ]
         
-        # Check if embedding is already cached
-        if product_id in self.product_embeddings:
-            return self.product_embeddings[product_id]
+        # Add features if available
+        if 'features' in product and product['features']:
+            product_info.append(f"Features: {', '.join(product['features'])}")
         
-        # Create text representation and get embedding
-        text = self._create_product_text(product)
-        embedding = self.get_embedding(text)
+        # Add tags if available
+        if 'tags' in product and product['tags']:
+            product_info.append(f"Tags: {', '.join(product['tags'])}")
         
-        # Cache the embedding
-        self.product_embeddings[product_id] = embedding
+        # Combine all product information into a single text
+        product_text = " ".join(product_info)
         
-        return embedding
+        # Get embedding for the product text
+        return self.get_embedding(product_text)
     
     def embed_all_products(self, products):
-        """Create embeddings for a list of products and build the FAISS index"""
-        # Reset the index and ID mapping
-        self.index = faiss.IndexFlatL2(self.embedding_dim)
+        """
+        Create embeddings for all products and build a search index
+        """
+        # Skip if no products
+        if not products:
+            return
+        
+        # Reset storage
+        self.product_embeddings = {}
         self.product_ids = []
         
         # Generate embeddings for all products
         embeddings = []
         for product in products:
             product_id = product['id']
-            embedding = self.embed_product(product)
-            embeddings.append(embedding)
             self.product_ids.append(product_id)
+            
+            # Get embedding
+            embedding = self.get_product_embedding(product)
+            
+            # Store in dictionary
+            self.product_embeddings[product_id] = embedding
+            
+            # Add to list for index building
+            embeddings.append(embedding)
         
-        # Convert to numpy array and add to index
-        if embeddings:
-            embeddings_array = np.array(embeddings, dtype=np.float32)
-            self.index.add(embeddings_array)
-            self.is_index_trained = True
+        # Convert to numpy array
+        embeddings_array = np.array(embeddings).astype('float32')
+        
+        # Build search index
+        if FAISS_AVAILABLE:
+            # Use FAISS for efficient similarity search
+            self.product_index = faiss.IndexFlatL2(self.embedding_dim)
+            self.product_index.add(embeddings_array)
+        else:
+            # Just store the embeddings as numpy array
+            self.product_index = embeddings_array
     
-    def find_similar_products(self, query_embedding, products, top_n=10, exclude_ids=None):
-        """Find products similar to a query embedding using FAISS"""
+    def get_user_interests_embedding(self, browsed_products, user_preferences):
+        """
+        Generate an embedding representing the user's interests
+        based on browsing history and explicit preferences
+        """
+        if not browsed_products:
+            # If no browsing history, create an embedding from preferences
+            return self._get_preferences_embedding(user_preferences)
+        
+        # Combine browsing history embeddings with preference embedding
+        history_embedding = self._get_history_embedding(browsed_products)
+        
+        if not user_preferences:
+            # If no preferences, just use browsing history
+            return history_embedding
+        
+        # Get preferences embedding
+        preferences_embedding = self._get_preferences_embedding(user_preferences)
+        
+        # Combine with 70% weight on browsing history, 30% on preferences
+        combined_embedding = 0.7 * history_embedding + 0.3 * preferences_embedding
+        
+        # Normalize the embedding
+        norm = np.linalg.norm(combined_embedding)
+        if norm > 0:
+            combined_embedding = combined_embedding / norm
+        
+        return combined_embedding
+    
+    def _get_history_embedding(self, browsed_products):
+        """
+        Create an embedding representing the user's browsing history
+        """
+        # If no browsing history, return zero vector
+        if not browsed_products:
+            return np.zeros(self.embedding_dim)
+        
+        # Get embeddings for all browsed products
+        embeddings = []
+        for product in browsed_products:
+            # Get embedding
+            embedding = self.get_product_embedding(product)
+            embeddings.append(embedding)
+        
+        # Weight more recent products higher (if products are in chronological order)
+        weights = np.linspace(0.5, 1.0, len(embeddings))
+        
+        # Compute weighted average embedding
+        weighted_embedding = np.zeros(self.embedding_dim)
+        for i, embedding in enumerate(embeddings):
+            weighted_embedding += weights[i] * embedding
+        
+        # Normalize the embedding
+        norm = np.linalg.norm(weighted_embedding)
+        if norm > 0:
+            weighted_embedding = weighted_embedding / norm
+        
+        return weighted_embedding
+    
+    def _get_preferences_embedding(self, user_preferences):
+        """
+        Create an embedding representing the user's explicit preferences
+        """
+        # Extract preference info
+        preference_texts = []
+        
+        for key, value in user_preferences.items():
+            if value:
+                # Handle different types of preference values
+                if isinstance(value, dict):
+                    # Handle nested dictionaries like price range
+                    for sub_key, sub_value in value.items():
+                        if sub_value is not None:
+                            preference_texts.append(f"{key.replace('_', ' ')} {sub_key}: {sub_value}")
+                elif isinstance(value, list):
+                    # Handle lists like category preferences
+                    preference_texts.append(f"{key.replace('_', ' ')}: {', '.join(value)}")
+                else:
+                    # Handle simple values
+                    preference_texts.append(f"{key.replace('_', ' ')}: {value}")
+        
+        # If no preferences, return zero vector
+        if not preference_texts:
+            return np.zeros(self.embedding_dim)
+        
+        # Combine preferences into a single text
+        preferences_text = " User prefers " + ". ".join(preference_texts)
+        
+        # Get embedding for the preferences text
+        return self.get_embedding(preferences_text)
+    
+    def find_similar_products(self, query_embedding, products, top_n=5, exclude_ids=None):
+        """
+        Find the most similar products to a query embedding
+        
+        Parameters:
+        - query_embedding: The embedding to compare against
+        - products: List of products to search
+        - top_n: Number of results to return
+        - exclude_ids: Product IDs to exclude from results
+        
+        Returns:
+        - List of tuples (product, similarity_score)
+        """
         if exclude_ids is None:
             exclude_ids = []
-            
-        # Make sure index is built
-        if not self.is_index_trained or self.index.ntotal == 0:
+        
+        # Ensure we have the index and embeddings
+        if self.product_index is None or not self.product_ids:
             self.embed_all_products(products)
         
-        # Reshape query vector for FAISS
-        query_embedding = query_embedding.reshape(1, -1)
+        # Normalize the query embedding
+        norm = np.linalg.norm(query_embedding)
+        if norm > 0:
+            query_embedding = query_embedding / norm
         
-        # Perform the search
-        distances, indices = self.index.search(query_embedding, top_n + len(exclude_ids))
+        # Reshape for FAISS
+        query_embedding = np.array([query_embedding]).astype('float32')
         
-        # Create product ID to product mapping for quick lookup
-        product_map = {product['id']: product for product in products}
-        
-        # Filter and format results
-        results = []
-        for i, idx in enumerate(indices[0]):
-            if idx < 0 or idx >= len(self.product_ids):
-                continue  # Skip invalid indices
-                
-            product_id = self.product_ids[idx]
+        if FAISS_AVAILABLE and isinstance(self.product_index, faiss.Index):
+            # Use FAISS for efficient similarity search
+            distances, indices = self.product_index.search(query_embedding, len(self.product_ids))
             
-            # Skip excluded IDs
-            if product_id in exclude_ids:
-                continue
+            # Convert results to product, score tuples
+            results = []
+            for i, idx in enumerate(indices[0]):
+                if idx >= 0 and idx < len(self.product_ids):
+                    product_id = self.product_ids[idx]
+                    
+                    # Skip excluded products
+                    if product_id in exclude_ids:
+                        continue
+                    
+                    # Find the product with this ID
+                    product = next((p for p in products if p['id'] == product_id), None)
+                    
+                    if product:
+                        # Convert distance to similarity score (1 - normalized distance)
+                        score = 1.0 - min(distances[0][i] / 10.0, 1.0)
+                        results.append((product, score))
+            
+        else:
+            # Fallback to numpy-based search
+            results = []
+            for product in products:
+                product_id = product['id']
                 
-            # Get the product
-            if product_id in product_map:
-                product = product_map[product_id]
+                # Skip excluded products
+                if product_id in exclude_ids:
+                    continue
                 
-                # Convert distance to similarity score
-                similarity = 1.0 / (1.0 + distances[0][i])
+                # Get product embedding
+                embedding = self.get_product_embedding(product)
+                
+                # Normalize the embedding
+                norm = np.linalg.norm(embedding)
+                if norm > 0:
+                    embedding = embedding / norm
+                
+                # Calculate cosine similarity
+                similarity = np.dot(query_embedding[0], embedding)
                 
                 results.append((product, similarity))
-                
-                # Break if we have enough results
-                if len(results) >= top_n:
-                    break
         
-        return results
-
-    def get_user_interests_embedding(self, browsed_products, user_preferences=None):
-        """Create an embedding representing user interests"""
-        # Combine browsed product descriptions
-        texts = [self._create_product_text(product) for product in browsed_products]
-        
-        # Add preference information if available
-        if user_preferences:
-            preference_text = ""
-            for key, value in user_preferences.items():
-                if value:
-                    preference_text += f"{key} {value} "
-            
-            if preference_text:
-                texts.append(preference_text)
-        
-        # Combine texts
-        combined_text = " ".join(texts)
-        
-        # Get embedding
-        return self.get_embedding(combined_text)
+        # Sort by similarity score (highest first) and take top N
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:top_n]
