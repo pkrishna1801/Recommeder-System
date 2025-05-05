@@ -136,12 +136,11 @@
         "Pets",
         "Clothing",
         "Accessories",
-        "Footwear",
-        "Electronics"
+        "Footwear"
       ],
       "price_range": {
-        "max": 50,
-        "min": 0
+        "min": 100,
+        "max": 200
       },
       "brand_preferences": [
         "ArtisanCraft",
@@ -150,10 +149,10 @@
       ]
     },
     "browsing_history": [
-      "prod008",
-      "prod028"
+      "prod038",
+      "prod008"
     ],
     "created_at": 1746423468.9371405,
-    "last_login": 1746475427.2470553
+    "last_login": 1746479183.4829874
   }
 ]

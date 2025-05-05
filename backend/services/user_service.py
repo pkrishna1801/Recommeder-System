@@ -1,10 +1,3 @@
-"""
-User Service Implementation for AI-Powered Product Recommendation Engine
-
-This service handles user management, authentication, and preference storage.
-In a production environment, this would interface with a database.
-"""
-
 import json
 import os
 import uuid

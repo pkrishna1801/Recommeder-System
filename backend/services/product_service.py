@@ -1,10 +1,3 @@
-"""
-Product Service Implementation for AI-Powered Product Recommendation Engine
-
-This service handles product data operations including loading, filtering,
-and retrieving product information.
-"""
-
 import json
 from config import config
 

@@ -1,10 +1,3 @@
-"""
-Enhanced LLM Service for AI-Powered Product Recommendation Engine
-
-This service handles interactions with the LLM API to generate personalized
-product recommendations based on user preferences and browsing history.
-"""
-
 import openai
 import json
 import re
@@ -25,12 +18,9 @@ class LLMService:
         self.model_name = config.get('MODEL_NAME', 'gpt-3.5-turbo')
         self.max_tokens = config.get('MAX_TOKENS', 1000)
         self.temperature = config.get('TEMPERATURE', 0.7)
-        
-        # Initialize embedding service if available
 
         self.embedding_service = EmbeddingService()
         self.use_embeddings = True if self.embedding_service else False
-        # Cache for storing computed data
         self.cache = {}
 
     def generate_recommendations(self, user_preferences, browsing_history, all_products, num_recommendations=5):

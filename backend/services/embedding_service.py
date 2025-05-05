@@ -1,10 +1,3 @@
-"""
-Embedding Service for AI-Powered Product Recommendation Engine
-
-This service handles the creation and retrieval of embeddings for products and user profiles,
-enabling semantic search and similarity-based recommendation.
-"""
-
 import numpy as np
 import openai
 import json
@@ -12,7 +5,7 @@ import os
 from functools import lru_cache
 from config import config
 
-# Try to import FAISS for efficient similarity search
+# Try to import FAISS 
 try:
     import faiss
     FAISS_AVAILABLE = True

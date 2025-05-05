@@ -1,13 +1,3 @@
-"""
-Main Flask application for the AI-Powered Product Recommendation Engine
-
-This application provides an API for:
-- Fetching product data
-- User authentication and profile management
-- Submitting user preferences and browsing history
-- Generating AI-powered product recommendations
-"""
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
