@@ -18,6 +18,7 @@ backend/*.log
 backend/instance/
 backend/venv/
 backend/.env
+backend/cache/
 
 # -------------------
 # Node / React (frontend/)
