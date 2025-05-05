@@ -43,6 +43,9 @@ const AppContent = () => {
   // State for mobile responsive design
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // State for current page view
+  const [currentPage, setCurrentPage] = useState('catalog'); // 'catalog' or 'recommendations'
+  
   // Fetch products on component mount
   useEffect(() => {
     const loadProducts = async () => {
@@ -108,6 +111,8 @@ const AppContent = () => {
         isAuthenticated ? token : null
       );
       setRecommendations(data.recommendations || []);
+      // Switch to recommendations page after loading
+      setCurrentPage('recommendations');
     } catch (error) {
       console.error('Error getting recommendations:', error);
     } finally {
@@ -155,6 +160,26 @@ const AppContent = () => {
           </button>
         </div>
         <UserProfile />
+        <div className="page-navigation">
+          <button 
+            className={`nav-button ${currentPage === 'catalog' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('catalog')}
+          >
+            Product Catalog
+          </button>
+          <button 
+            className={`nav-button ${currentPage === 'recommendations' ? 'active' : ''}`}
+            onClick={() => {
+              if (recommendations.length > 0) {
+                setCurrentPage('recommendations');
+              } else {
+                handleGetRecommendations();
+              }
+            }}
+          >
+            Your Recommendations
+          </button>
+        </div>
       </header>
       
       <main className={`app-content ${isMobileMenuOpen ? 'mobile-menu-open' : ''}`}>
@@ -177,22 +202,24 @@ const AppContent = () => {
         </div>
         
         <div className="main-content">
-          <section className="catalog-section">
-            <h2 className="section-title">Product Catalog</h2>
-            <Catalog 
-              products={products}
-              onProductClick={handleProductClick}
-              browsingHistory={browsingHistory}
-            />
-          </section>
-          
-          <section className="recommendations-section">
-            <h2 className="section-title">Your Recommendations</h2>
-            <Recommendations 
-              recommendations={recommendations}
-              isLoading={isLoading}
-            />
-          </section>
+          {currentPage === 'catalog' ? (
+            <section className="catalog-section">
+              <h2 className="section-title">Product Catalog</h2>
+              <Catalog 
+                products={products}
+                onProductClick={handleProductClick}
+                browsingHistory={browsingHistory}
+              />
+            </section>
+          ) : (
+            <section className="recommendations-section full-page">
+              <h2 className="section-title">Your Recommendations</h2>
+              <Recommendations 
+                recommendations={recommendations}
+                isLoading={isLoading}
+              />
+            </section>
+          )}
         </div>
       </main>
     </div>

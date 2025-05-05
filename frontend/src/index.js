@@ -5,6 +5,7 @@ import './styles/Auth.css';
 import './styles/UserProfile.css';
 import './styles/UserPreferences.css';
 import './styles/BrowsingHistory.css';
+import './styles/Recommendations.css'; // Add this line for the new recommendations styles
 import './styles/additional-styles.css';
 import App from './App';
 

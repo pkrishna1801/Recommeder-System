@@ -1,0 +1,281 @@
+/* Recommendations.css - Modern, clean design for product recommendations */
+
+.recommendations-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0px 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.recommendations-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.recommendations-header p {
+  margin: 0;
+  color: #505050;
+  font-size: 16px;
+}
+
+/* Loading State */
+.recommendations-container.loading {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-container {
+  text-align: center;
+}
+
+.loader {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  margin-bottom: 16px;
+  border: 3px solid rgba(0, 123, 255, 0.2);
+  border-radius: 50%;
+  border-top-color: #0d6efd;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loader-container p {
+  margin: 0;
+  color: #6c757d;
+}
+
+/* Empty State */
+.recommendations-container.empty {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.empty-state {
+  text-align: center;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  margin: 0 0 12px 0;
+  color: #303030;
+  font-size: 20px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #707070;
+  font-size: 15px;
+}
+
+/* Recommendation Card */
+.recommendation-card {
+  display: flex;
+  margin: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.recommendation-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.recommendation-rank {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+
+.rank-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: #0d6efd;
+  color: white;
+  font-weight: 600;
+  border-bottom-right-radius: 10px;
+}
+
+.recommendation-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.product-details {
+  padding: 20px 20px 15px 20px;
+  margin-left: 20px;
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.product-title {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  color: #303030;
+  padding-left: 20px;
+}
+
+.product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.product-brand {
+  font-weight: 500;
+  color: #606060;
+}
+
+.product-price {
+  font-weight: 700;
+  color: #2e7d32;
+  font-size: 17px;
+}
+
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating-value {
+  font-weight: 500;
+  color: #505050;
+}
+
+.rating-star {
+  color: #ffc107;
+}
+
+.product-category {
+  margin: 12px 0;
+  color: #707070;
+}
+
+.category-link {
+  color: #0d6efd;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.category-link:hover {
+  text-decoration: underline;
+}
+
+.separator {
+  margin: 0 8px;
+  color: #909090;
+}
+
+.product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  font-size: 12px;
+  background-color: #f0f0f0;
+  color: #606060;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.recommendation-reason {
+  padding: 20px 24px;
+  background-color: white;
+}
+
+.recommendation-reason h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #404040;
+}
+
+.recommendation-reason p {
+  margin: 0 0 20px 0;
+  color: #505050;
+  line-height: 1.6;
+}
+
+.match-score {
+  background-color: #f9f9f9;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.match-score label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #505050;
+}
+
+.score-visualization {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-bar {
+  flex-grow: 1;
+  height: 10px;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.score-fill {
+  height: 100%;
+  background-color: #4caf50;
+  border-radius: 5px;
+}
+
+.score-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: #2e7d32;
+  min-width: 45px;
+  text-align: right;
+}
+
+/* Responsive layout for larger screens */
+@media (min-width: 768px) {
+  .recommendation-content {
+    flex-direction: row;
+  }
+  
+  .product-details {
+    width: 35%;
+    border-bottom: none;
+    border-right: 1px solid #f0f0f0;
+  }
+  
+  .recommendation-reason {
+    width: 65%;
+  }
+}

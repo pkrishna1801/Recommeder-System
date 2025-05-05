@@ -134,11 +134,15 @@
     "preferences": {
       "category_preferences": [
         "Pets",
-        "Office"
+        "Clothing",
+        "Accessories",
+        "Books",
+        "Footwear",
+        "Electronics"
       ],
       "price_range": {
-        "min": 0,
-        "max": 50
+        "max": 50,
+        "min": 0
       },
       "brand_preferences": [
         "ArtisanCraft",
@@ -147,10 +151,13 @@
       ]
     },
     "browsing_history": [
+      "prod046",
+      "prod018",
+      "prod038",
       "prod028",
       "prod009"
     ],
     "created_at": 1746423468.9371405,
-    "last_login": 1746424176.5908926
+    "last_login": 1746426577.1175432
   }
 ]
