@@ -1,176 +1,190 @@
 import React, { useState, useEffect } from 'react';
-import './UserPreferences.css';
+import { useAuth } from '../context/AuthContext';
+import { fetchProductCategories, fetchProductBrands, fetchPriceRange } from '../services/api';
+import '../styles/UserPreferences.css';
 
-const UserPreferences = ({ preferences, products, onPreferencesChange }) => {
-  // State for form values
-  const [formValues, setFormValues] = useState({
-    priceRange: preferences.priceRange || 'all',
-    categories: preferences.categories || [],
-    brands: preferences.brands || []
-  });
+const UserPreferences = () => {
+  // Get user preferences from auth context
+  const { preferences, updatePreferences, token } = useAuth();
   
-  // Get unique categories and brands from products
-  const categories = [...new Set(products.map(product => product.category))].sort();
-  const brands = [...new Set(products.map(product => product.brand))].sort();
+  // Local state for UI elements
+  const [categories, setCategories] = useState([]);
+  const [brands, setBreedInds] = useState([]);
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // Price range options
-  const priceRanges = [
-    { id: 'all', label: 'All Prices' },
-    { id: '0-50', label: 'Under $50' },
-    { id: '50-100', label: 'Between $50-$100' },
-    { id: '100-200', label: 'Between $100-$200' },
-    { id: '200+', label: 'Over $200' }
+  // Price range options for dropdown
+  const priceRangeOptions = [
+    { label: 'All Prices', min: null, max: null },
+    { label: 'Under $50', min: 0, max: 50 },
+    { label: '$50 to $100', min: 50, max: 100 },
+    { label: '$100 to $200', min: 100, max: 200 },
+    { label: 'Over $200', min: 200, max: null }
   ];
   
-  // Update parent component when form values change
+  // Load categories, brands, and price range on component mount
   useEffect(() => {
-    if (onPreferencesChange) {
-      onPreferencesChange(formValues);
-    }
-  }, [formValues, onPreferencesChange]);
+    const loadFilterOptions = async () => {
+      setLoading(true);
+      try {
+        // Load categories
+        const categoriesResponse = await fetchProductCategories();
+        if (categoriesResponse.success) {
+          setCategories(categoriesResponse.categories);
+        }
+        
+        // Load brands
+        const brandsResponse = await fetchProductBrands();
+        if (brandsResponse.success) {
+          setBreedInds(brandsResponse.brands);
+        }
+        
+        // Load price range
+        const priceRangeResponse = await fetchPriceRange();
+        if (priceRangeResponse.success) {
+          setPriceRange(priceRangeResponse.price_range);
+        }
+      } catch (err) {
+        setError('Error loading filter options');
+        console.error('Error loading filter options:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadFilterOptions();
+  }, []);
   
-  // Handle price range change
+  // Handle price range selection
   const handlePriceRangeChange = (e) => {
-    setFormValues({
-      ...formValues,
-      priceRange: e.target.value
-    });
+    const selectedOption = priceRangeOptions.find(option => 
+      `${option.min}-${option.max}` === e.target.value
+    );
+    
+    if (selectedOption) {
+      updatePreferences({ 
+        price_range: { 
+          min: selectedOption.min, 
+          max: selectedOption.max 
+        } 
+      });
+    }
+  };
+  
+  // Get current price range value for select element
+  const getCurrentPriceRangeValue = () => {
+    const { min, max } = preferences.price_range || {};
+    
+    // Find matching option or default to 'All Prices'
+    const matchingOption = priceRangeOptions.find(option => 
+      option.min === min && option.max === max
+    );
+    
+    return matchingOption 
+      ? `${matchingOption.min}-${matchingOption.max}` 
+      : 'null-null';
   };
   
   // Handle category selection
-  const handleCategoryChange = (category, isChecked) => {
-    let updatedCategories;
+  const handleCategoryChange = (e) => {
+    const category = e.target.value;
+    const isChecked = e.target.checked;
     
+    let updatedCategories;
     if (isChecked) {
-      // Add category
-      updatedCategories = [...formValues.categories, category];
+      // Add category if checked
+      updatedCategories = [...(preferences.category_preferences || []), category];
     } else {
-      // Remove category
-      updatedCategories = formValues.categories.filter(cat => cat !== category);
+      // Remove category if unchecked
+      updatedCategories = (preferences.category_preferences || []).filter(c => c !== category);
     }
     
-    setFormValues({
-      ...formValues,
-      categories: updatedCategories
-    });
+    updatePreferences({ category_preferences: updatedCategories });
   };
   
   // Handle brand selection
-  const handleBrandChange = (brand, isChecked) => {
-    let updatedBrands;
+  const handleBrandChange = (e) => {
+    const brand = e.target.value;
+    const isChecked = e.target.checked;
     
+    let updatedBrands;
     if (isChecked) {
-      // Add brand
-      updatedBrands = [...formValues.brands, brand];
+      // Add brand if checked
+      updatedBrands = [...(preferences.brand_preferences || []), brand];
     } else {
-      // Remove brand
-      updatedBrands = formValues.brands.filter(b => b !== brand);
+      // Remove brand if unchecked
+      updatedBrands = (preferences.brand_preferences || []).filter(b => b !== brand);
     }
     
-    setFormValues({
-      ...formValues,
-      brands: updatedBrands
-    });
+    updatePreferences({ brand_preferences: updatedBrands });
   };
-  
-  // Clear all preferences
-  const handleClearAll = () => {
-    setFormValues({
-      priceRange: 'all',
-      categories: [],
-      brands: []
-    });
-  };
+
+  if (loading) {
+    return <div className="preferences-loading">Loading preferences...</div>;
+  }
+
+  if (error) {
+    return <div className="preferences-error">{error}</div>;
+  }
 
   return (
     <div className="preferences-container">
-      <div className="preferences-header">
-        <h3>Your Preferences</h3>
-        <button 
-          className="clear-btn" 
-          onClick={handleClearAll}
-          title="Clear all preferences"
-        >
-          Clear All
-        </button>
-      </div>
+      <h3 className="preferences-title">Your Preferences</h3>
       
+      {/* Price Range Preferences */}
       <div className="preference-section">
         <h4>Price Range</h4>
-        <div className="price-ranges">
-          {priceRanges.map(range => (
-            <div key={range.id} className="price-range-option">
-              <input
-                type="radio"
-                id={`price-${range.id}`}
-                name="priceRange"
-                value={range.id}
-                checked={formValues.priceRange === range.id}
-                onChange={handlePriceRangeChange}
-              />
-              <label htmlFor={`price-${range.id}`}>{range.label}</label>
-            </div>
+        <select 
+          value={getCurrentPriceRangeValue()} 
+          onChange={handlePriceRangeChange}
+          className="price-range-select"
+        >
+          {priceRangeOptions.map(option => (
+            <option 
+              key={`${option.min}-${option.max}`} 
+              value={`${option.min}-${option.max}`}
+            >
+              {option.label}
+            </option>
           ))}
-        </div>
+        </select>
       </div>
       
+      {/* Category Preferences */}
       <div className="preference-section">
         <h4>Categories</h4>
-        <div className="categories-container">
+        <div className="checkbox-container">
           {categories.map(category => (
-            <div key={category} className="category-option">
+            <label key={category} className="checkbox-label">
               <input
                 type="checkbox"
-                id={`category-${category}`}
-                checked={formValues.categories.includes(category)}
-                onChange={(e) => handleCategoryChange(category, e.target.checked)}
+                value={category}
+                checked={(preferences.category_preferences || []).includes(category)}
+                onChange={handleCategoryChange}
               />
-              <label htmlFor={`category-${category}`}>{category}</label>
-            </div>
+              {category}
+            </label>
           ))}
         </div>
       </div>
       
+      {/* Brand Preferences */}
       <div className="preference-section">
         <h4>Brands</h4>
-        <div className="brands-container">
+        <div className="checkbox-container">
           {brands.map(brand => (
-            <div key={brand} className="brand-option">
+            <label key={brand} className="checkbox-label">
               <input
                 type="checkbox"
-                id={`brand-${brand}`}
-                checked={formValues.brands.includes(brand)}
-                onChange={(e) => handleBrandChange(brand, e.target.checked)}
+                value={brand}
+                checked={(preferences.brand_preferences || []).includes(brand)}
+                onChange={handleBrandChange}
               />
-              <label htmlFor={`brand-${brand}`}>{brand}</label>
-            </div>
+              {brand}
+            </label>
           ))}
         </div>
-      </div>
-      
-      <div className="preferences-summary">
-        <h4>Selected Preferences:</h4>
-        <ul>
-          <li>
-            <strong>Price Range:</strong> {
-              priceRanges.find(range => range.id === formValues.priceRange)?.label || 'All Prices'
-            }
-          </li>
-          <li>
-            <strong>Categories:</strong> {
-              formValues.categories.length > 0 
-                ? formValues.categories.join(', ') 
-                : 'All Categories'
-            }
-          </li>
-          <li>
-            <strong>Brands:</strong> {
-              formValues.brands.length > 0 
-                ? formValues.brands.join(', ') 
-                : 'All Brands'
-            }
-          </li>
-        </ul>
       </div>
     </div>
   );

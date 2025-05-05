@@ -1,0 +1,185 @@
+.user-profile {
+    margin-bottom: 1.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .user-profile-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  
+  @media (min-width: 768px) {
+    .user-info {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+  
+  .user-greeting {
+    font-weight: bold;
+    color: #495057;
+    font-size: 1.1rem;
+  }
+  
+  .user-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .profile-toggle-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .profile-toggle-btn:hover {
+    background-color: #5a6268;
+  }
+  
+  .logout-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .logout-btn:hover {
+    background-color: #c82333;
+  }
+  
+  .profile-details {
+    padding: 1.5rem;
+  }
+  
+  .profile-section {
+    margin-bottom: 2rem;
+  }
+  
+  .profile-section:last-child {
+    margin-bottom: 0;
+  }
+  
+  .profile-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: #343a40;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.5rem;
+  }
+  
+  .profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  @media (min-width: 576px) {
+    .info-item {
+      flex-direction: row;
+      align-items: center;
+    }
+    
+    .info-label {
+      width: 100px;
+      flex-shrink: 0;
+    }
+  }
+  
+  .info-label {
+    font-weight: 600;
+    color: #6c757d;
+  }
+  
+  .info-value {
+    color: #212529;
+  }
+  
+  .info-empty {
+    color: #adb5bd;
+    font-style: italic;
+  }
+  
+  .preferences-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .preferences-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  
+  @media (min-width: 576px) {
+    .preferences-actions {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+  
+  .save-preferences-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .save-preferences-btn:hover {
+    background-color: #218838;
+  }
+  
+  .save-preferences-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+  
+  .save-message {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .save-message.success {
+    color: #155724;
+    background-color: #d4edda;
+  }
+  
+  .save-message.error {
+    color: #721c24;
+    background-color: #f8d7da;
+  }

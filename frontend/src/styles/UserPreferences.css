@@ -1,0 +1,104 @@
+.preferences-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .preferences-title {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: #343a40;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.75rem;
+  }
+  
+  .preference-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .preference-section h4 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    color: #495057;
+  }
+  
+  .price-range-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    color: #495057;
+    background-color: #fff;
+  }
+  
+  .price-range-select:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+  
+  .checkbox-container {
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+    color: #495057;
+    cursor: pointer;
+  }
+  
+  .checkbox-label input {
+    margin-right: 0.5rem;
+  }
+  
+  .preferences-loading {
+    padding: 1rem;
+    text-align: center;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .preferences-error {
+    padding: 1rem;
+    text-align: center;
+    color: #721c24;
+    background-color: #f8d7da;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  /* Responsive adjustments */
+  @media (min-width: 768px) {
+    .checkbox-container {
+      max-height: 200px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .preferences-container {
+      padding: 1rem;
+    }
+    
+    .preference-section h4 {
+      font-size: 0.9rem;
+    }
+    
+    .checkbox-label {
+      font-size: 0.9rem;
+    }
+  }

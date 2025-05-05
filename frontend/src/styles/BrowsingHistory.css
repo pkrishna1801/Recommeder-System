@@ -1,0 +1,171 @@
+.history-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.history-header h3 {
+  font-size: 1.1rem;
+  margin: 0;
+  color: #343a40;
+}
+
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clear-history-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clear-history-btn:hover {
+  background-color: #c82333;
+}
+
+.expand-button {
+  background-color: #e9ecef;
+  color: #495057;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  line-height: 1;
+  padding: 0;
+}
+
+.expand-button:hover {
+  background-color: #dee2e6;
+}
+
+.history-items {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.history-item:hover {
+  background-color: #f8f9fa;
+}
+
+.history-item-image {
+  margin-right: 0.75rem;
+}
+
+.image-placeholder-small {
+  width: 40px;
+  height: 40px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  font-weight: bold;
+}
+
+.history-item-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.history-item-name {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  color: #212529;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-details {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+}
+
+.history-item-price {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.history-item-brand {
+  color: #6c757d;
+}
+
+.history-empty {
+  padding: 1rem 0;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.history-loading {
+  padding: 1rem 0;
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 576px) {
+  .history-container {
+    padding: 0.75rem;
+  }
+  
+  .history-header h3 {
+    font-size: 1rem;
+  }
+  
+  .history-item {
+    padding: 0.5rem;
+  }
+  
+  .image-placeholder-small {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .history-item-name {
+    font-size: 0.9rem;
+  }
+  
+  .history-item-details {
+    font-size: 0.8rem;
+  }
+}

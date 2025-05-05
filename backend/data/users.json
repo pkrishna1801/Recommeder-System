@@ -1,0 +1,156 @@
+[
+  {
+    "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+    "username": "testuser",
+    "email": "test@example.com",
+    "password_hash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "password_salt": "6ba569b8a56da3e8fa04c815956f583b",
+    "preferences": {
+      "category_preferences": [
+        "Electronics",
+        "Home"
+      ],
+      "price_range": {
+        "min": 50,
+        "max": 200
+      },
+      "brand_preferences": [
+        "SoundWave",
+        "FitTech"
+      ]
+    },
+    "browsing_history": [
+      "prod007",
+      "prod002",
+      "prod016",
+      "prod009",
+      "prod027"
+    ],
+    "created_at": 1714935786,
+    "last_login": 1714935786
+  },
+  {
+    "id": "2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q",
+    "username": "johndoe",
+    "email": "john@example.com",
+    "password_hash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "password_salt": "7cb670b9b67eb4f8fa15c926946f694c",
+    "preferences": {
+      "category_preferences": [
+        "Sports",
+        "Footwear"
+      ],
+      "price_range": {
+        "min": 0,
+        "max": 100
+      },
+      "brand_preferences": [
+        "SportsFlex",
+        "TrailBlazer"
+      ]
+    },
+    "browsing_history": [
+      "prod001",
+      "prod031",
+      "prod017",
+      "prod023",
+      "prod010"
+    ],
+    "created_at": 1714935786,
+    "last_login": 1714935786
+  },
+  {
+    "id": "3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r",
+    "username": "janedoe",
+    "email": "jane@example.com",
+    "password_hash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "password_salt": "8dc781a0c78fc5f9fb26d37b68f694d",
+    "preferences": {
+      "category_preferences": [
+        "Beauty",
+        "Clothing"
+      ],
+      "price_range": {
+        "min": null,
+        "max": 50
+      },
+      "brand_preferences": [
+        "PureGlow",
+        "EcoWear"
+      ]
+    },
+    "browsing_history": [
+      "prod012",
+      "prod026",
+      "prod043",
+      "prod003",
+      "prod011"
+    ],
+    "created_at": 1714935786,
+    "last_login": 1714935786
+  },
+  {
+    "id": "df481d15-e7dc-4a25-a43b-b8d6999f2349",
+    "username": "pk1801",
+    "email": "prarthana181k@gmail.com",
+    "password_hash": "992dcbf52124a1f418dc7042c3d12dd1c59b3de972d326bac535284887f66956",
+    "password_salt": "83b981a97c6e47b0b61345dc34907cfe",
+    "preferences": {
+      "category_preferences": [],
+      "price_range": {
+        "min": null,
+        "max": null
+      },
+      "brand_preferences": []
+    },
+    "browsing_history": [],
+    "created_at": 1746422155.956639,
+    "last_login": null
+  },
+  {
+    "id": "59dd9492-fa67-4ab7-b938-4666e3a30b61",
+    "username": "A2310040014",
+    "email": "krishnamurthy.p@northeastern.edu",
+    "password_hash": "843bcc2f98324505eaeb0a80aef6c8fa8632fe7dc43672fbd6011d15a95f24c0",
+    "password_salt": "69fd7d8bf0b94947b60fab96db23ce76",
+    "preferences": {
+      "category_preferences": [],
+      "price_range": {
+        "min": null,
+        "max": null
+      },
+      "brand_preferences": []
+    },
+    "browsing_history": [],
+    "created_at": 1746422357.0082927,
+    "last_login": 1746423367.469953
+  },
+  {
+    "id": "f42a72e6-4178-492f-891f-8d04b6c92335",
+    "username": "ABC",
+    "email": "ABC@gmail.com",
+    "password_hash": "d0df92256d866e1a629966034ae6fac2be73dc20e26474bcbadf9b25fee23e94",
+    "password_salt": "f1d443d60c8d4a3092b2771395ad6a56",
+    "preferences": {
+      "category_preferences": [
+        "Pets",
+        "Office"
+      ],
+      "price_range": {
+        "min": 0,
+        "max": 50
+      },
+      "brand_preferences": [
+        "ArtisanCraft",
+        "ArtisanTech",
+        "BrewMaster"
+      ]
+    },
+    "browsing_history": [
+      "prod028",
+      "prod009"
+    ],
+    "created_at": 1746423468.9371405,
+    "last_login": 1746424176.5908926
+  }
+]
