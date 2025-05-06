@@ -1,0 +1,7 @@
+/tests/
+/.git/
+/*.egg-info
+/docs/
+/notebooks/
+*.pyc
+__pycache__/
