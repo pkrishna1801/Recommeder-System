@@ -5,3 +5,5 @@
 /notebooks/
 *.pyc
 __pycache__/
+*.git
+*.ipynb

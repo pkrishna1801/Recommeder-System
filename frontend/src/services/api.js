@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = "https://backend-app-c6a613ef7ad2.herokuapp.com/api";
 
 // Helper function to prepare headers with auth token if available
 const getHeaders = (token = null) => {

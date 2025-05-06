@@ -7,18 +7,18 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 
 from app import app as flask_app
 
-# ------------------------
+
 # Setup Flask test client
-# ------------------------
+
 @pytest.fixture
 def client():
     flask_app.config['TESTING'] = True
     with flask_app.test_client() as client:
         yield client
 
-# ------------------------
+
 # Helper: Get valid JWT token by logging in
-# ------------------------
+
 def get_token(client):
     response = client.post('/api/auth/login', json={
         "username": "ABC",
@@ -27,9 +27,9 @@ def get_token(client):
     assert response.status_code == 200
     return response.json.get("token")
 
-# ------------------------
+
 # 1. AUTH TEST CASES
-# ------------------------
+
 
 def test_register_user(client):
     response = client.post('/api/auth/register', json={
@@ -48,9 +48,9 @@ def test_login_user(client):
     assert response.status_code in [200, 401]
     assert 'success' in response.json
 
-# ------------------------
+
 # 2. PRODUCT TEST CASES
-# ------------------------
+
 
 def test_get_all_products(client):
     response = client.get('/api/products')
@@ -77,9 +77,9 @@ def test_get_price_range(client):
     assert response.status_code == 200
     assert 'price_range' in response.json
 
-# ------------------------
+
 # 3. RECOMMENDATION TEST CASES
-# ------------------------
+
 
 def test_get_recommendations_without_token(client):
     response = client.post('/api/recommendations', json={
@@ -92,9 +92,8 @@ def test_get_recommendations_without_token(client):
     assert response.status_code == 200
     assert 'recommendations' in response.json
 
-# ------------------------
 # 4. AUTHENTICATED ROUTES (using dynamic token)
-# ------------------------
+
 
 def test_get_profile_with_valid_token(client):
     token = get_token(client)

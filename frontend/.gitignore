@@ -1,24 +1,4 @@
-# -------------------
-# Python / Flask (backend/)
-# -------------------
-__pycache__/
-*.py[cod]
-*.egg-info/
-*.egg
-*.db
-*.sqlite3
-*.log
-instance/
-.env
-.env.*
-venv/
-.venv/
-backend/__pycache__/
-backend/*.log
-backend/instance/
-backend/venv/
-backend/.env
-backend/cache/
+
 
 # -------------------
 # Node / React (frontend/)
@@ -31,7 +11,7 @@ frontend/build/
 frontend/dist/
 frontend/.env
 frontend/*.log
-frontend/.git/
+
 # -------------------
 # IDEs / Editors
 # -------------------
